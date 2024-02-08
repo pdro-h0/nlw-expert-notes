@@ -3,10 +3,6 @@ import { X } from "lucide-react";
 import { ChangeEvent, MouseEvent, useState } from "react";
 import { toast } from "sonner";
 
-interface Content {
-  content: string;
-}
-
 interface NewNoteCardProps {
   handleClick: (content: string) => void;
 }
@@ -14,11 +10,10 @@ interface NewNoteCardProps {
 const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
   const [shouldShowOnBoarding, setShouldShowOnBoarding] =
     useState<boolean>(true);
-  const [content, setContent] = useState<Content>({
-    content: "",
-  });
+  const [content, setContent] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
 
+  useState<boolean>(false);
   const handleStartEditor = () => {
     setShouldShowOnBoarding(false);
   };
@@ -26,33 +21,72 @@ const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
   const handleContentChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
 
-    setContent((prevContent) => {
-      return { ...prevContent, [e.target.name]: e.target.value };
-    });
+    setContent(e.target.value);
 
     if (e.target.value === "") {
       setShouldShowOnBoarding(true);
     }
   };
 
+  let speechRecognition: SpeechRecognition | null = null;
+
   const handleStartRecording = () => {
+    const isSpeechRecognitionAPIAvaliable =
+      "SpeechRecognition" in window || "webkitSpeechRecognition" in window;
+
+    if (!isSpeechRecognitionAPIAvaliable) {
+      alert("Infelizmente seu navegador não suporta API de fala!");
+      return;
+    }
+
     setIsRecording(true);
+    setShouldShowOnBoarding(false);
+
+    const SpeechRecognitionAPI =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    speechRecognition = new SpeechRecognitionAPI();
+
+    (speechRecognition.lang = "pt-BR"),
+      (speechRecognition.continuous = true),
+      (speechRecognition.maxAlternatives = 1),
+      (speechRecognition.interimResults = true),
+      (speechRecognition.onresult = (event) => {
+        const transcription = Array.from(event.results).reduce(
+          (text, result) => {
+            return text.concat(result[0].transcript);
+          },
+          ""
+        );
+        setContent(transcription);
+      });
+
+    speechRecognition.onerror = (event) => {
+      console.error(event);
+    };
+
+    speechRecognition.start();
   };
 
   const stopRecording = () => {
     setIsRecording(false);
+
+    if (speechRecognition != null) {
+      speechRecognition.stop();
+    }
   };
 
   const handleSaveNote = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if(content.content === ""){
-      return
+    if (content === "") {
+      return;
     }
-    handleClick(content.content);
-    setContent({ content: "" });
+    handleClick(content);
+    setContent("");
     setShouldShowOnBoarding(true);
     toast.success("Nota Salva com sucesso");
   };
+
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
@@ -61,7 +95,7 @@ const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
             Adicionar Nota
           </span>
           <p>
-            Grave uma nota em um áudio que sera convertida para texto
+            Grave uma nota em um áudio que será convertida para texto
             automaticamente
           </p>
         </button>
@@ -69,7 +103,7 @@ const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
 
       <Dialog.Portal>
         <Dialog.Overlay className="inset-0 fixed bg-black/50" />
-        <Dialog.Content className="fixed overflow-hidden  left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[640px] w-full bg-slate-700 rounded-md flex flex-col outline-none h-[60vh]">
+        <Dialog.Content className="fixed overflow-hidden inset-0 md:inset-auto  md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-[640px] md:w-full bg-slate-700 md:rounded-md flex flex-col outline-none h-[60vh]">
           <Dialog.Close className="absolute right-0 top-0 bg-slate-800 p-1.5 text-slate-400 hover:text-slate-100">
             <X className="size-5" />
           </Dialog.Close>
@@ -105,7 +139,7 @@ const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
                   className="text-sm leading-6 text-slate-400 bg-transparent flex-1 flex outline-none"
                   onChange={handleContentChange}
                   name="content"
-                  value={content.content}
+                  value={content}
                 />
               )}
             </div>
