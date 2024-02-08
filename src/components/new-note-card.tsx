@@ -39,12 +39,15 @@ const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
     setIsRecording(true);
   };
 
-  const stopRecording = () =>{
-    setIsRecording(false)
-  }
+  const stopRecording = () => {
+    setIsRecording(false);
+  };
 
   const handleSaveNote = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    if(content.content === ""){
+      return
+    }
     handleClick(content.content);
     setContent({ content: "" });
     setShouldShowOnBoarding(true);
@@ -109,9 +112,10 @@ const NewNoteCard = ({ handleClick }: NewNoteCardProps) => {
             {isRecording ? (
               <button
                 type="button"
-                className="w-full bg-slate-900 py-4 text-center text-sm text-slate-300 outline-none font-medium hover:text-slate-100"
+                className="w-full bg-slate-900 py-4 text-center text-sm text-slate-300 outline-none font-medium hover:text-slate-100 flex items-center justify-center gap-2"
                 onClick={stopRecording}
               >
+                <div className="size-3 rounded-full bg-red-600 animate-pulse" />
                 Gravando! (Clique para interromper)
               </button>
             ) : (
